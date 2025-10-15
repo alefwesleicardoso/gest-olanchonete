@@ -1,0 +1,292 @@
+🏪 COMPLETE DELIVERY RESTAURANT MANAGEMENT SYSTEM
+GOAL: Create a complete management system for a delivery restaurant with web frontend and mobile app API.
+
+TECH STACK: PHP + SQLite + HTML + CSS + JavaScript + Chart.js
+
+CORE FEATURES:
+
+1. 🗄️ DATABASE SCHEMA (SQLite)
+sql
+-- Essential tables:
+- products (id, name, price, stock, category, image_url, created_at)
+- orders (id, customer_name, customer_phone, customer_address, total_amount, status, order_date)
+- order_items (id, order_id, product_id, quantity, unit_price) 
+- categories (id, name, description)
+2. 📱 WEB INTERFACE
+Required Pages:
+
+index.php - Dashboard with statistics and overview
+
+products.php - Product management (CRUD operations)
+
+new_order.php - Order creation interface
+
+orders.php - Order management and tracking
+
+reports.php - Analytics and charts
+
+customers.php - Customer management
+
+3. 🔌 REST API ENDPOINTS
+php
+// Product endpoints
+GET    /api/products          # List all products
+POST   /api/products          # Create new product
+PUT    /api/products/{id}     # Update product
+DELETE /api/products/{id}     # Delete product
+
+// Order endpoints  
+GET    /api/orders            # List all orders
+POST   /api/orders            # Create new order
+PUT    /api/orders/{id}/status # Update order status
+GET    /api/orders/{id}       # Get order details
+
+// Analytics endpoints
+GET    /api/analytics/sales   # Sales data for charts
+GET    /api/analytics/top-products # Best selling products
+4. 🎨 MODERN UI/UX DESIGN
+Responsive design that works on all devices
+
+Color scheme: Professional blues and greens
+
+Typography: System fonts with proper hierarchy
+
+Icons: Font Awesome or emoji icons
+
+Animations: Smooth hover effects and transitions
+
+5. 📊 DASHBOARD COMPONENTS
+Statistics cards (total products, orders, revenue, today's orders)
+
+Recent orders table with status badges
+
+Quick action buttons
+
+Sales chart (line chart for revenue trend)
+
+Low stock alerts
+
+6. 🛒 ORDER MANAGEMENT SYSTEM
+Product selection with quantity picker
+
+Real-time total calculation
+
+Customer information form
+
+Order status workflow
+
+Order history per customer
+
+7. 📦 PRODUCT MANAGEMENT
+Add/edit/delete products
+
+Image upload functionality
+
+Stock level management
+
+Category filtering
+
+Search and sort functionality
+
+8. 📈 REPORTING & ANALYTICS
+Sales reports by date range
+
+Top selling products
+
+Revenue charts using Chart.js
+
+Customer order history
+
+Export functionality
+
+9. 🔄 ORDER STATUS WORKFLOW
+php
+$status_flow = [
+    'pending' => ['label' => '⏳ Pending', 'color' => 'orange'],
+    'confirmed' => ['label' => '✅ Confirmed', 'color' => 'blue'], 
+    'preparing' => ['label' => '👨‍🍳 Preparing', 'color' => 'purple'],
+    'ready' => ['label' => '📦 Ready', 'color' => 'green'],
+    'delivered' => ['label' => '🚗 Delivered', 'color' => 'gray'],
+    'cancelled' => ['label' => '❌ Cancelled', 'color' => 'red']
+];
+10. 📁 PROJECT STRUCTURE
+text
+restaurant-system/
+├── index.php                 # Main dashboard
+├── products.php             # Product management
+├── new_order.php            # Create orders
+├── orders.php               # Order management  
+├── reports.php              # Analytics & reports
+├── customers.php            # Customer management
+├── api/
+│   ├── products.php         # Product API
+│   ├── orders.php           # Order API
+│   ├── analytics.php        # Analytics API
+│   └── customers.php        # Customers API
+├── includes/
+│   ├── header.php           # Common header
+│   ├── footer.php           # Common footer
+│   ├── database.php         # Database connection
+│   └── functions.php        # Helper functions
+├── assets/
+│   ├── css/
+│   │   └── style.css        # Main stylesheet
+│   ├── js/
+│   │   └── main.js          # Main JavaScript
+│   └── images/              # Product images
+└── config/
+    └── constants.php        # App constants
+11. 🎨 DESIGN SPECIFICATIONS
+Primary color: #007bff (Blue)
+
+Secondary color: #28a745 (Green)
+
+Accent color: #fd7e14 (Orange)
+
+Background: #f8f9fa (Light gray)
+
+Card shadows: 0 4px 6px rgba(0, 0, 0, 0.1)
+
+Border radius: 8px
+
+Font family: 'Segoe UI', system-ui, sans-serif
+
+12. ⚡ ADVANCED FEATURES
+Real-time search with debouncing
+
+Dynamic form validation
+
+Auto-calculate order totals
+
+Low stock notifications
+
+Order status notifications
+
+Responsive data tables
+
+Image compression for uploads
+
+13. 📱 MOBILE-FIRST RESPONSIVE DESIGN
+css
+/* Breakpoints */
+mobile:  (max-width: 768px)
+tablet:  (768px - 1024px)  
+desktop: (min-width: 1024px)
+
+/* Mobile features */
+- Hamburger navigation menu
+- Stacked card layout
+- Touch-friendly buttons (min 44px)
+- Optimized form inputs
+14. 🔒 DATA VALIDATION & SECURITY
+SQL injection prevention with prepared statements
+
+XSS protection with htmlspecialchars()
+
+File upload validation
+
+Form input sanitization
+
+Error handling with try-catch blocks
+
+15. 🧪 SAMPLE DATA & DEMO CONTENT
+php
+// Sample products
+$sample_products = [
+    ['name' => 'Cheeseburger', 'price' => 12.99, 'stock' => 50, 'category' => 'Burgers'],
+    ['name' => 'French Fries', 'price' => 4.99, 'stock' => 100, 'category' => 'Sides'],
+    ['name' => 'Coca-Cola', 'price' => 2.99, 'stock' => 200, 'category' => 'Drinks'],
+    ['name' => 'Chicken Wings', 'price' => 9.99, 'stock' => 30, 'category' => 'Appetizers'],
+    ['name' => 'Chocolate Cake', 'price' => 6.99, 'stock' => 20, 'category' => 'Desserts']
+];
+16. 📊 CHART.JS INTEGRATION
+Line chart for sales trends
+
+Bar chart for top products
+
+Pie chart for category distribution
+
+Real-time data updates
+
+17. 🔄 REAL-TIME UPDATES
+Auto-refresh order status
+
+Live stock updates
+
+Dynamic statistics
+
+Notification badges
+
+18. 🎯 USER EXPERIENCE
+Loading states for all operations
+
+Success/error messages
+
+Confirmations for destructive actions
+
+Auto-save forms
+
+Keyboard shortcuts
+
+19. 📝 CODE QUALITY REQUIREMENTS
+Well-commented code
+
+Consistent naming conventions
+
+Modular functions
+
+Error handling throughout
+
+Security best practices
+
+20. 🚀 DEPLOYMENT READY
+Environment configuration
+
+Database initialization
+
+Sample data seeding
+
+Error logging
+
+Performance optimized
+
+IMPLEMENTATION INSTRUCTIONS: Create a fully functional, production-ready restaurant management system with clean code, modern UI, and comprehensive features. The system should be immediately usable upon generation.
+
+🎯 HOW TO USE THIS PROMPT:
+Step-by-Step:
+In your Replit, click the 🧠 Replit AI icon (top right)
+
+Select "Generate with AI" or "Generate entire project"
+
+Paste the complete English prompt above
+
+Click "Generate" and wait
+
+Replit AI will build the ENTIRE system automatically! 🚀
+
+What to Expect:
+✅ Complete file structure
+
+✅ Working database with sample data
+
+✅ Beautiful, responsive interface
+
+✅ Full CRUD operations
+
+✅ REST API endpoints
+
+✅ Charts and analytics
+
+✅ Mobile-friendly design
+
+🔧 AFTER GENERATION:
+Test These Key Features:
+Run the project - should open dashboard
+
+Add a new product in products management
+
+Create a test order with multiple items
+
+Check the reports page with charts
+
+Test API endpoints (/api/products)
