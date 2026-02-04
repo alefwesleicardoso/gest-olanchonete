@@ -1,4 +1,4 @@
-import { LayoutDashboard, Package, ShoppingCart, Users, BarChart3, PlusCircle } from "lucide-react";
+import { LayoutDashboard, Package, ShoppingCart, Users, BarChart3, PlusCircle, ClipboardList } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import {
   Sidebar,
@@ -14,40 +14,46 @@ import {
 
 const menuItems = [
   {
-    title: "Dashboard",
+    title: "Painel",
     url: "/",
     icon: LayoutDashboard,
     testId: "link-dashboard",
   },
   {
-    title: "Products",
+    title: "Produtos",
     url: "/products",
     icon: Package,
     testId: "link-products",
   },
   {
-    title: "New Order",
+    title: "Novo pedido",
     url: "/orders/new",
     icon: PlusCircle,
     testId: "link-new-order",
   },
   {
-    title: "Orders",
+    title: "Pedidos",
     url: "/orders",
     icon: ShoppingCart,
     testId: "link-orders",
   },
   {
-    title: "Customers",
+    title: "Clientes",
     url: "/customers",
     icon: Users,
     testId: "link-customers",
   },
   {
-    title: "Analytics",
+    title: "Análises",
     url: "/analytics",
     icon: BarChart3,
     testId: "link-analytics",
+  },
+  {
+    title: "Estoque",
+    url: "/stock-movements",
+    icon: ClipboardList,
+    testId: "link-stock",
   },
 ];
 
@@ -62,14 +68,14 @@ export function AppSidebar() {
             <Package className="h-6 w-6" />
           </div>
           <div>
-            <h2 className="text-lg font-semibold text-sidebar-foreground">Restaurant</h2>
-            <p className="text-xs text-muted-foreground">Management System</p>
+            <h2 className="text-lg font-semibold text-sidebar-foreground">Loja de roupas</h2>
+            <p className="text-xs text-muted-foreground">Sistema de gestão</p>
           </div>
         </div>
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>Navigation</SidebarGroupLabel>
+          <SidebarGroupLabel>Navegação</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {menuItems.map((item) => {
