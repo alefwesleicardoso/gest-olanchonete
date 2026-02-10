@@ -13,6 +13,7 @@ import type { Order, OrderStatus } from "@shared/schema";
 import { statusConfig, orderStatuses } from "@shared/schema";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { formatCurrency } from "@/lib/currency";
 
 export default function Orders() {
   const [filterStatus, setFilterStatus] = useState<string>("all");

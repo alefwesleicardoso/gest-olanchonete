@@ -19,6 +19,7 @@ import type { Analytics, Order } from "@shared/schema";
 import { statusConfig } from "@shared/schema";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { compactBrlFormatter, formatCurrency } from "@/lib/currency";
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler);
 
@@ -99,6 +100,7 @@ export default function Dashboard() {
         beginAtZero: true,
         ticks: {
           callback: (value: any) =>
+            compactBrlFormatter.format(Number(value)),
             new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 }).format(
               Number(value)
             ),

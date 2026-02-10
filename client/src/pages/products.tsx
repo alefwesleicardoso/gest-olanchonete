@@ -15,6 +15,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { Product, InsertProduct } from "@shared/schema";
 import { insertProductSchema, categories } from "@shared/schema";
+import { formatCurrency } from "@/lib/currency";
 
 export default function Products() {
   const [searchQuery, setSearchQuery] = useState("");

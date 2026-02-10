@@ -15,6 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { Product, InsertOrder } from "@shared/schema";
 import { categories, insertOrderSchema } from "@shared/schema";
+import { formatCurrency } from "@/lib/currency";
 
 interface CartItem {
   productId: string;

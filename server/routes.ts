@@ -7,7 +7,11 @@ import { z } from "zod";
 export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/products", async (req, res) => {
     try {
-      const products = await storage.getProducts();
+      const page = Number(req.query.page) || 1;
+      const limit = Number(req.query.limit) || 200;
+      const search = typeof req.query.search === "string" ? req.query.search : undefined;
+      const category = typeof req.query.category === "string" ? req.query.category : undefined;
+      const products = await storage.getProducts({ page, limit, search, category });
       res.json(products);
     } catch (error) {
       res.status(500).json({ error: "Falha ao buscar produtos" });
@@ -69,7 +73,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/orders", async (req, res) => {
     try {
-      const orders = await storage.getOrders();
+      const page = Number(req.query.page) || 1;
+      const limit = Number(req.query.limit) || 200;
+      const status = typeof req.query.status === "string" ? req.query.status : undefined;
+      const customer = typeof req.query.customer === "string" ? req.query.customer : undefined;
+      const orders = await storage.getOrders({ page, limit, status, customer });
       res.json(orders);
     } catch (error) {
       res.status(500).json({ error: "Falha ao buscar pedidos" });

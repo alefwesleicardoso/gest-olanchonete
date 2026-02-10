@@ -13,15 +13,29 @@ import type {
 
 export type StockMovementType = "entrada" | "saida" | "ajuste" | "devolucao";
 
+type ProductListParams = {
+  page?: number;
+  limit?: number;
+  search?: string;
+  category?: string;
+};
+
+type OrderListParams = {
+  page?: number;
+  limit?: number;
+  status?: string;
+  customer?: string;
+};
+
 export interface IStorage {
-  getProducts(): Promise<Product[]>;
+  getProducts(params?: ProductListParams): Promise<Product[]>;
   getProduct(id: string): Promise<Product | undefined>;
   createProduct(product: InsertProduct): Promise<Product>;
   updateProduct(id: string, product: InsertProduct): Promise<Product | undefined>;
   deleteProduct(id: string): Promise<boolean>;
   updateProductStock(id: string, quantityChange: number, options?: { variantId?: string; reason?: string; type?: StockMovementType }): Promise<void>;
 
-  getOrders(): Promise<Order[]>;
+  getOrders(params?: OrderListParams): Promise<Order[]>;
   getOrder(id: string): Promise<Order | undefined>;
   getRecentOrders(limit: number): Promise<Order[]>;
   createOrder(order: InsertOrder): Promise<Order>;
@@ -495,10 +509,25 @@ export class MemStorage implements IStorage {
     });
   }
 
-  async getProducts(): Promise<Product[]> {
-    return Array.from(this.products.values()).sort((a, b) => 
-      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-    );
+  async getProducts(params?: ProductListParams): Promise<Product[]> {
+    const page = Math.max(1, params?.page ?? 1);
+    const limit = Math.min(200, Math.max(1, params?.limit ?? 200));
+    const search = params?.search?.trim().toLowerCase();
+    const category = params?.category?.trim();
+
+    const filteredProducts = Array.from(this.products.values())
+      .filter((product) => {
+        const matchesSearch = !search
+          || product.name.toLowerCase().includes(search)
+          || product.sku.toLowerCase().includes(search)
+          || (product.barcode?.toLowerCase().includes(search) ?? false);
+        const matchesCategory = !category || product.category === category;
+        return matchesSearch && matchesCategory;
+      })
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+    const offset = (page - 1) * limit;
+    return filteredProducts.slice(offset, offset + limit);
   }
 
   async getProduct(id: string): Promise<Product | undefined> {
@@ -562,10 +591,24 @@ export class MemStorage implements IStorage {
     }
   }
 
-  async getOrders(): Promise<Order[]> {
-    return Array.from(this.orders.values()).sort((a, b) => 
-      new Date(b.orderDate).getTime() - new Date(a.orderDate).getTime()
-    );
+  async getOrders(params?: OrderListParams): Promise<Order[]> {
+    const page = Math.max(1, params?.page ?? 1);
+    const limit = Math.min(200, Math.max(1, params?.limit ?? 200));
+    const status = params?.status?.trim();
+    const customer = params?.customer?.trim().toLowerCase();
+
+    const filteredOrders = Array.from(this.orders.values())
+      .filter((order) => {
+        const matchesStatus = !status || order.status === status;
+        const matchesCustomer = !customer
+          || order.customerName.toLowerCase().includes(customer)
+          || order.customerPhone.toLowerCase().includes(customer);
+        return matchesStatus && matchesCustomer;
+      })
+      .sort((a, b) => new Date(b.orderDate).getTime() - new Date(a.orderDate).getTime());
+
+    const offset = (page - 1) * limit;
+    return filteredOrders.slice(offset, offset + limit);
   }
 
   async getOrder(id: string): Promise<Order | undefined> {
