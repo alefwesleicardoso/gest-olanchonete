@@ -28,7 +28,18 @@ export default function Products() {
     new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
 
   const { data: products, isLoading } = useQuery<Product[]>({
-    queryKey: ["/api/products"],
+    queryKey: ["/api/products", searchQuery, selectedCategory],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      if (searchQuery.trim()) params.set("search", searchQuery.trim());
+      if (selectedCategory !== "all") params.set("category", selectedCategory);
+      const query = params.toString();
+      const response = await fetch(query ? `/api/products?${query}` : "/api/products", {
+        credentials: "include",
+      });
+      if (!response.ok) throw new Error("Falha ao buscar produtos");
+      return response.json();
+    },
   });
 
   const form = useForm<InsertProduct>({
@@ -91,12 +102,6 @@ export default function Products() {
     onError: () => {
       toast({ title: "Erro", description: "Falha ao excluir o produto", variant: "destructive" });
     },
-  });
-
-  const filteredProducts = products?.filter((product) => {
-    const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory = selectedCategory === "all" || product.category === selectedCategory;
-    return matchesSearch && matchesCategory;
   });
 
   const handleSubmit = (data: InsertProduct) => {
@@ -515,9 +520,9 @@ export default function Products() {
             </Card>
           ))}
         </div>
-      ) : filteredProducts && filteredProducts.length > 0 ? (
+      ) : products && products.length > 0 ? (
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {filteredProducts.map((product) => (
+          {products.map((product) => (
             <Card key={product.id} className="hover-elevate" data-testid={`card-product-${product.id}`}>
               <CardHeader className="space-y-2">
                 <div className="flex items-start justify-between gap-2">

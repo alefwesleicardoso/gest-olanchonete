@@ -24,7 +24,17 @@ export default function Orders() {
     new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
 
   const { data: orders, isLoading } = useQuery<Order[]>({
-    queryKey: ["/api/orders"],
+    queryKey: ["/api/orders", filterStatus],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      if (filterStatus !== "all") params.set("status", filterStatus);
+      const query = params.toString();
+      const response = await fetch(query ? `/api/orders?${query}` : "/api/orders", {
+        credentials: "include",
+      });
+      if (!response.ok) throw new Error("Falha ao buscar pedidos");
+      return response.json();
+    },
   });
 
   const updateStatusMutation = useMutation({
@@ -38,11 +48,6 @@ export default function Orders() {
     onError: () => {
       toast({ title: "Erro", description: "Falha ao atualizar o status do pedido", variant: "destructive" });
     },
-  });
-
-  const filteredOrders = orders?.filter((order) => {
-    const matchesStatus = filterStatus === "all" || order.status === filterStatus;
-    return matchesStatus;
   });
 
   const handleStatusChange = (orderId: string, newStatus: OrderStatus) => {
@@ -85,9 +90,9 @@ export default function Orders() {
             </Card>
           ))}
         </div>
-      ) : filteredOrders && filteredOrders.length > 0 ? (
+      ) : orders && orders.length > 0 ? (
         <div className="space-y-4">
-          {filteredOrders.map((order) => {
+          {orders.map((order) => {
             const statusInfo = statusConfig[order.status];
             return (
               <Card key={order.id} className="hover-elevate" data-testid={`card-order-${order.id}`}>
