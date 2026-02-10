@@ -12,6 +12,8 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { Order, OrderStatus } from "@shared/schema";
 import { statusConfig, orderStatuses } from "@shared/schema";
 import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { formatCurrency } from "@/lib/currency";
 
 export default function Orders() {
   const [filterStatus, setFilterStatus] = useState<string>("all");
@@ -19,7 +21,17 @@ export default function Orders() {
   const { toast } = useToast();
 
   const { data: orders, isLoading } = useQuery<Order[]>({
-    queryKey: ["/api/orders"],
+    queryKey: ["/api/orders", filterStatus],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      if (filterStatus !== "all") params.set("status", filterStatus);
+      const query = params.toString();
+      const response = await fetch(query ? `/api/orders?${query}` : "/api/orders", {
+        credentials: "include",
+      });
+      if (!response.ok) throw new Error("Falha ao buscar pedidos");
+      return response.json();
+    },
   });
 
   const updateStatusMutation = useMutation({
@@ -28,16 +40,11 @@ export default function Orders() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
       queryClient.invalidateQueries({ queryKey: ["/api/analytics"] });
-      toast({ title: "Success", description: "Order status updated successfully" });
+      toast({ title: "Sucesso", description: "Status do pedido atualizado com sucesso" });
     },
     onError: () => {
-      toast({ title: "Error", description: "Failed to update order status", variant: "destructive" });
+      toast({ title: "Erro", description: "Falha ao atualizar o status do pedido", variant: "destructive" });
     },
-  });
-
-  const filteredOrders = orders?.filter((order) => {
-    const matchesStatus = filterStatus === "all" || order.status === filterStatus;
-    return matchesStatus;
   });
 
   const handleStatusChange = (orderId: string, newStatus: OrderStatus) => {
@@ -48,15 +55,15 @@ export default function Orders() {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-foreground" data-testid="text-orders-title">Orders</h1>
-          <p className="text-muted-foreground">Manage and track customer orders</p>
+          <h1 className="text-3xl font-bold text-foreground" data-testid="text-orders-title">Pedidos</h1>
+          <p className="text-muted-foreground">Gerencie e acompanhe os pedidos dos clientes</p>
         </div>
         <Select value={filterStatus} onValueChange={setFilterStatus}>
           <SelectTrigger className="w-full sm:w-48" data-testid="select-filter-status">
-            <SelectValue placeholder="All Statuses" />
+            <SelectValue placeholder="Todos os status" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Statuses</SelectItem>
+            <SelectItem value="all">Todos os status</SelectItem>
             {orderStatuses.map((status) => (
               <SelectItem key={status} value={status}>
                 {statusConfig[status].label}
@@ -80,9 +87,9 @@ export default function Orders() {
             </Card>
           ))}
         </div>
-      ) : filteredOrders && filteredOrders.length > 0 ? (
+      ) : orders && orders.length > 0 ? (
         <div className="space-y-4">
-          {filteredOrders.map((order) => {
+          {orders.map((order) => {
             const statusInfo = statusConfig[order.status];
             return (
               <Card key={order.id} className="hover-elevate" data-testid={`card-order-${order.id}`}>
@@ -96,19 +103,26 @@ export default function Orders() {
                         </Badge>
                       </CardTitle>
                       <CardDescription>
-                        Order #{order.id.slice(0, 8)} • {format(new Date(order.orderDate), "MMM dd, yyyy 'at' hh:mm a")}
+                        Pedido #{order.id.slice(0, 8)} • {format(new Date(order.orderDate), "dd MMM yyyy 'às' HH:mm", { locale: ptBR })}
                       </CardDescription>
                       <div className="flex flex-wrap gap-2 text-sm">
-                        <span className="text-muted-foreground">Phone:</span>
+                        <span className="text-muted-foreground">Telefone:</span>
                         <span className="text-foreground">{order.customerPhone}</span>
                         <span className="text-muted-foreground">•</span>
-                        <span className="text-muted-foreground">Address:</span>
+                        <span className="text-muted-foreground">Endereço de entrega:</span>
                         <span className="text-foreground">{order.customerAddress}</span>
+                        {order.customerTaxId ? (
+                          <>
+                            <span className="text-muted-foreground">•</span>
+                            <span className="text-muted-foreground">CPF/CNPJ:</span>
+                            <span className="text-foreground">{order.customerTaxId}</span>
+                          </>
+                        ) : null}
                       </div>
                     </div>
                     <div className="flex flex-col gap-2 sm:items-end">
                       <div className="text-2xl font-bold text-foreground" data-testid={`text-amount-${order.id}`}>
-                        ${order.totalAmount.toFixed(2)}
+                        {formatCurrency(order.totalAmount)}
                       </div>
                       <div className="flex gap-2">
                         <Select
@@ -139,43 +153,66 @@ export default function Orders() {
                           </DialogTrigger>
                           <DialogContent>
                             <DialogHeader>
-                              <DialogTitle>Order Details</DialogTitle>
-                              <DialogDescription>Order #{order.id.slice(0, 8)}</DialogDescription>
+                              <DialogTitle>Detalhes do pedido</DialogTitle>
+                              <DialogDescription>Pedido #{order.id.slice(0, 8)}</DialogDescription>
                             </DialogHeader>
                             <div className="space-y-4">
                               <div>
-                                <h4 className="font-semibold text-foreground mb-2">Customer Information</h4>
+                                <h4 className="font-semibold text-foreground mb-2">Informações do cliente</h4>
                                 <div className="space-y-1 text-sm">
                                   <div className="flex justify-between">
-                                    <span className="text-muted-foreground">Name:</span>
+                                    <span className="text-muted-foreground">Nome:</span>
                                     <span className="text-foreground">{order.customerName}</span>
                                   </div>
                                   <div className="flex justify-between">
-                                    <span className="text-muted-foreground">Phone:</span>
+                                    <span className="text-muted-foreground">Telefone:</span>
                                     <span className="text-foreground">{order.customerPhone}</span>
                                   </div>
                                   <div className="flex justify-between">
-                                    <span className="text-muted-foreground">Address:</span>
+                                    <span className="text-muted-foreground">Endereço de entrega:</span>
                                     <span className="text-foreground text-right">{order.customerAddress}</span>
                                   </div>
+                                  {order.customerTaxId ? (
+                                    <div className="flex justify-between">
+                                      <span className="text-muted-foreground">CPF/CNPJ:</span>
+                                      <span className="text-foreground">{order.customerTaxId}</span>
+                                    </div>
+                                  ) : null}
                                 </div>
                               </div>
                               <div>
-                                <h4 className="font-semibold text-foreground mb-2">Order Items</h4>
+                                <h4 className="font-semibold text-foreground mb-2">Itens do pedido</h4>
                                 <div className="space-y-2">
                                   {order.items.map((item) => (
                                     <div key={item.id} className="flex justify-between text-sm">
                                       <span className="text-foreground">
-                                        {item.productName} x {item.quantity}
+                                        {item.productName}
+                                        {item.variantLabel ? ` (${item.variantLabel})` : ""} x {item.quantity}
                                       </span>
                                       <span className="text-foreground font-medium">
-                                        ${(item.quantity * item.unitPrice).toFixed(2)}
+                                        {formatCurrency(item.quantity * item.unitPrice)}
                                       </span>
                                     </div>
                                   ))}
+                                  <div className="border-t pt-2 text-sm space-y-1">
+                                    <div className="flex justify-between">
+                                      <span className="text-muted-foreground">Frete</span>
+                                      <span>{formatCurrency(order.shippingCost)}</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                      <span className="text-muted-foreground">Desconto</span>
+                                      <span>-{formatCurrency(order.discountAmount)}</span>
+                                    </div>
+                                    {order.couponCode ? (
+                                      <div className="flex justify-between">
+                                        <span className="text-muted-foreground">Cupom</span>
+                                        <span>{order.couponCode}</span>
+                                      </div>
+                                    ) : null}
+                                  </div>
                                   <div className="border-t pt-2 flex justify-between font-bold">
                                     <span>Total</span>
-                                    <span>${order.totalAmount.toFixed(2)}</span>
+                                    <span>{formatCurrency(order.totalAmount)}</span>
                                   </div>
                                 </div>
                               </div>
@@ -194,11 +231,11 @@ export default function Orders() {
         <Card>
           <CardContent className="py-16 text-center">
             <ShoppingCart className="mx-auto h-16 w-16 text-muted-foreground" />
-            <h3 className="mt-4 text-lg font-semibold text-foreground">No orders found</h3>
+            <h3 className="mt-4 text-lg font-semibold text-foreground">Nenhum pedido encontrado</h3>
             <p className="mt-2 text-sm text-muted-foreground">
               {filterStatus !== "all"
-                ? "No orders with this status"
-                : "Orders will appear here once customers place them"}
+                ? "Nenhum pedido com esse status"
+                : "Os pedidos aparecerão aqui quando os clientes realizarem compras"}
             </p>
           </CardContent>
         </Card>
