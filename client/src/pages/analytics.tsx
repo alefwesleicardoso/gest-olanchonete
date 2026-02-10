@@ -40,6 +40,10 @@ export default function AnalyticsPage() {
   });
 
     const salesTrendData = {
+  const formatCurrency = (value: number) =>
+    new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
+
+  const salesTrendData = {
     labels: analytics?.salesTrend.map((item) => format(new Date(item.date), "dd MMM", { locale: ptBR })) || [],
     datasets: [
       {
@@ -258,6 +262,28 @@ export default function AnalyticsPage() {
                 <div className="text-2xl font-bold text-foreground">
                   {((analytics?.returnRate ?? 0) * 100).toFixed(1)}%
                 </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="text-lg font-semibold text-foreground">
+                  -{formatCurrency(analytics?.totalDiscounts ?? 0)}
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  Frete: {formatCurrency(analytics?.totalShipping ?? 0)}
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="hover-elevate">
+              <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">Risco operacional</CardTitle>
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-rose-100 dark:bg-rose-950">
+                  <TrendingUp className="h-5 w-5 text-rose-600" />
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-foreground">
+                  {((analytics?.returnRate ?? 0) * 100).toFixed(1)}%
+                </div>
                 <p className="text-xs text-muted-foreground mt-1">
                   Itens com estoque baixo: {analytics?.lowStockCount ?? 0}
                 </p>
@@ -320,6 +346,44 @@ export default function AnalyticsPage() {
                 <div className="text-center">
                   <Package className="mx-auto h-12 w-12 text-muted-foreground" />
                   <p className="mt-2 text-sm text-muted-foreground">Ainda não há vendas de produtos</p>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Variações mais vendidas</CardTitle>
+            <CardDescription>Top tamanho/cor por unidades</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <Skeleton className="h-80 w-full" />
+            ) : analytics?.topVariants && analytics.topVariants.length > 0 ? (
+              <div className="space-y-4">
+                {analytics.topVariants.slice(0, 6).map((variant, index) => (
+                  <div key={variant.label} className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary font-semibold text-sm">
+                        {index + 1}
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-foreground">{variant.label}</p>
+                        <p className="text-xs text-muted-foreground">{variant.totalSold} unidades</p>
+                      </div>
+                    </div>
+                    <div className="text-right text-sm font-semibold text-foreground">
+                      {formatCurrency(variant.revenue)}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="h-80 flex items-center justify-center">
+                <div className="text-center">
+                  <Layers className="mx-auto h-12 w-12 text-muted-foreground" />
+                  <p className="mt-2 text-sm text-muted-foreground">Nenhuma variação vendida ainda</p>
                 </div>
               </div>
             )}
