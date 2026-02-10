@@ -35,7 +35,7 @@ export const productVariantSchema = z.object({
   stock: z.coerce.number().int().min(0, "O estoque não pode ser negativo"),
 });
 
-export const productSchema = z.object({
+const productBaseSchema = z.object({
   id: z.string(),
   name: z.string().min(1, "O nome é obrigatório"),
   price: z.coerce.number().positive("O preço deve ser positivo"),
@@ -49,7 +49,12 @@ export const productSchema = z.object({
   imageUrl: z.string().optional(),
   variants: z.array(productVariantSchema).optional(),
   createdAt: z.string(),
-}).superRefine((data, ctx) => {
+});
+
+const validateProductPrices = (
+  data: { salePrice?: number; price: number; costPrice: number },
+  ctx: z.RefinementCtx
+) => {
   if (data.salePrice !== undefined && data.salePrice > data.price) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
@@ -57,6 +62,7 @@ export const productSchema = z.object({
       path: ["salePrice"],
     });
   }
+
   if (data.salePrice !== undefined && data.salePrice < data.costPrice) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
@@ -64,6 +70,7 @@ export const productSchema = z.object({
       path: ["salePrice"],
     });
   }
+
   if (data.price < data.costPrice) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
@@ -71,9 +78,12 @@ export const productSchema = z.object({
       path: ["price"],
     });
   }
-});
+};
 
-export const insertProductSchema = productSchema.omit({ id: true, createdAt: true });
+export const productSchema = productBaseSchema.superRefine(validateProductPrices);
+export const insertProductSchema = productBaseSchema
+  .omit({ id: true, createdAt: true })
+  .superRefine(validateProductPrices);
 
 export type ProductVariant = z.infer<typeof productVariantSchema>;
 export type Product = z.infer<typeof productSchema>;
