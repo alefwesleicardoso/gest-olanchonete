@@ -13,6 +13,9 @@ export default function Customers() {
     queryKey: ["/api/customers"],
   });
 
+  const formatCurrency = (value: number) =>
+    new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
+
   return (
     <div className="space-y-6">
       <div>

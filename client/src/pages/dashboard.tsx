@@ -32,6 +32,9 @@ export default function Dashboard() {
     queryKey: ["/api/orders/recent"],
   });
 
+  const formatCurrency = (value: number) =>
+    new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
+
   const stats = [
     {
       title: "Total de produtos",
@@ -98,6 +101,9 @@ export default function Dashboard() {
         ticks: {
           callback: (value: any) =>
             compactBrlFormatter.format(Number(value)),
+            new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 }).format(
+              Number(value)
+            ),
         },
       },
     },
