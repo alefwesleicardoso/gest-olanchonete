@@ -11,6 +11,7 @@ import NewOrder from "@/pages/new-order";
 import Orders from "@/pages/orders";
 import Customers from "@/pages/customers";
 import AnalyticsPage from "@/pages/analytics";
+import StockMovements from "@/pages/stock-movements";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -22,6 +23,7 @@ function Router() {
       <Route path="/orders" component={Orders} />
       <Route path="/customers" component={Customers} />
       <Route path="/analytics" component={AnalyticsPage} />
+      <Route path="/stock-movements" component={StockMovements} />
       <Route component={NotFound} />
     </Switch>
   );

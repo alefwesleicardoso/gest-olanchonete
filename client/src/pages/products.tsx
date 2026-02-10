@@ -10,11 +10,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
-import { useForm } from "react-hook-form";
+import { useFieldArray, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { Product, InsertProduct } from "@shared/schema";
 import { insertProductSchema, categories } from "@shared/schema";
+import { formatCurrency } from "@/lib/currency";
 
 export default function Products() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -32,10 +33,21 @@ export default function Products() {
     defaultValues: {
       name: "",
       price: 0,
+      salePrice: undefined,
+      costPrice: 0,
       stock: 0,
-      category: "Burgers",
+      category: "Blusas",
+      sku: "",
+      barcode: "",
+      supplier: "",
       imageUrl: "",
+      variants: [],
     },
+  });
+
+  const { fields: variantFields, append: appendVariant, remove: removeVariant } = useFieldArray({
+    control: form.control,
+    name: "variants",
   });
 
   const createMutation = useMutation({
@@ -43,12 +55,12 @@ export default function Products() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/products"] });
       queryClient.invalidateQueries({ queryKey: ["/api/analytics"] });
-      toast({ title: "Success", description: "Product created successfully" });
+      toast({ title: "Sucesso", description: "Produto criado com sucesso" });
       setIsDialogOpen(false);
       form.reset();
     },
     onError: () => {
-      toast({ title: "Error", description: "Failed to create product", variant: "destructive" });
+      toast({ title: "Erro", description: "Falha ao criar o produto", variant: "destructive" });
     },
   });
 
@@ -56,13 +68,13 @@ export default function Products() {
     mutationFn: ({ id, data }: { id: string; data: InsertProduct }) => apiRequest("PUT", `/api/products/${id}`, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/products"] });
-      toast({ title: "Success", description: "Product updated successfully" });
+      toast({ title: "Sucesso", description: "Produto atualizado com sucesso" });
       setIsDialogOpen(false);
       setEditingProduct(null);
       form.reset();
     },
     onError: () => {
-      toast({ title: "Error", description: "Failed to update product", variant: "destructive" });
+      toast({ title: "Erro", description: "Falha ao atualizar o produto", variant: "destructive" });
     },
   });
 
@@ -71,10 +83,10 @@ export default function Products() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/products"] });
       queryClient.invalidateQueries({ queryKey: ["/api/analytics"] });
-      toast({ title: "Success", description: "Product deleted successfully" });
+      toast({ title: "Sucesso", description: "Produto excluído com sucesso" });
     },
     onError: () => {
-      toast({ title: "Error", description: "Failed to delete product", variant: "destructive" });
+      toast({ title: "Erro", description: "Falha ao excluir o produto", variant: "destructive" });
     },
   });
 
@@ -97,15 +109,21 @@ export default function Products() {
     form.reset({
       name: product.name,
       price: product.price,
+      salePrice: product.salePrice,
+      costPrice: product.costPrice,
       stock: product.stock,
       category: product.category,
+      sku: product.sku,
+      barcode: product.barcode,
+      supplier: product.supplier,
       imageUrl: product.imageUrl,
+      variants: product.variants ?? [],
     });
     setIsDialogOpen(true);
   };
 
   const handleDelete = (id: string) => {
-    if (confirm("Are you sure you want to delete this product?")) {
+    if (confirm("Tem certeza de que deseja excluir este produto?")) {
       deleteMutation.mutate(id);
     }
   };
@@ -118,25 +136,32 @@ export default function Products() {
     }
   };
 
+  const getTotalStock = (product: Product) => {
+    if (product.variants && product.variants.length > 0) {
+      return product.variants.reduce((sum, variant) => sum + variant.stock, 0);
+    }
+    return product.stock;
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-foreground" data-testid="text-products-title">Products</h1>
-          <p className="text-muted-foreground">Manage your restaurant menu items</p>
+          <h1 className="text-3xl font-bold text-foreground" data-testid="text-products-title">Produtos</h1>
+          <p className="text-muted-foreground">Gerencie o catálogo e o estoque da loja</p>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={handleDialogClose}>
           <DialogTrigger asChild>
             <Button data-testid="button-add-product">
               <Plus className="mr-2 h-4 w-4" />
-              Add Product
+              Adicionar produto
             </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>{editingProduct ? "Edit Product" : "Add New Product"}</DialogTitle>
+              <DialogTitle>{editingProduct ? "Editar produto" : "Adicionar novo produto"}</DialogTitle>
               <DialogDescription>
-                {editingProduct ? "Update the product details below" : "Fill in the details to add a new product"}
+                {editingProduct ? "Atualize os detalhes do produto abaixo" : "Preencha os detalhes para adicionar um novo produto"}
               </DialogDescription>
             </DialogHeader>
             <Form {...form}>
@@ -146,9 +171,9 @@ export default function Products() {
                   name="name"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Name</FormLabel>
+                      <FormLabel>Nome</FormLabel>
                       <FormControl>
-                        <Input placeholder="Product name" {...field} data-testid="input-product-name" />
+                        <Input placeholder="Nome do produto" {...field} data-testid="input-product-name" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -160,7 +185,7 @@ export default function Products() {
                     name="price"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Price</FormLabel>
+                        <FormLabel>Preço</FormLabel>
                         <FormControl>
                           <Input
                             type="number"
@@ -178,10 +203,52 @@ export default function Products() {
                   />
                   <FormField
                     control={form.control}
+                    name="salePrice"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Preço promocional</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            placeholder="0"
+                            {...field}
+                            value={field.value || ""}
+                            onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
+                            data-testid="input-product-sale-price"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="costPrice"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Custo</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            placeholder="0.00"
+                            {...field}
+                            value={field.value || ""}
+                            onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : 0)}
+                            data-testid="input-product-cost"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
                     name="stock"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Stock</FormLabel>
+                        <FormLabel>Estoque base</FormLabel>
                         <FormControl>
                           <Input
                             type="number"
@@ -197,16 +264,57 @@ export default function Products() {
                     )}
                   />
                 </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="sku"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>SKU</FormLabel>
+                        <FormControl>
+                          <Input placeholder="SKU do produto" {...field} data-testid="input-product-sku" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="barcode"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Código de barras</FormLabel>
+                        <FormControl>
+                          <Input placeholder="EAN/GTIN" {...field} data-testid="input-product-barcode" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                <FormField
+                  control={form.control}
+                  name="supplier"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Fornecedor</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Nome do fornecedor" {...field} data-testid="input-product-supplier" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
                 <FormField
                   control={form.control}
                   name="category"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Category</FormLabel>
+                      <FormLabel>Categoria</FormLabel>
                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger data-testid="select-product-category">
-                            <SelectValue placeholder="Select category" />
+                            <SelectValue placeholder="Selecione a categoria" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
@@ -226,7 +334,7 @@ export default function Products() {
                   name="imageUrl"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Image URL (optional)</FormLabel>
+                      <FormLabel>URL da imagem (opcional)</FormLabel>
                       <FormControl>
                         <Input placeholder="https://..." {...field} data-testid="input-product-image" />
                       </FormControl>
@@ -234,9 +342,125 @@ export default function Products() {
                     </FormItem>
                   )}
                 />
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="text-sm font-semibold">Variações (tamanho/cor)</h3>
+                      <p className="text-xs text-muted-foreground">Cadastre grade com estoque por variação</p>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => appendVariant({ id: crypto.randomUUID(), size: "", color: "", sku: "", barcode: "", stock: 0 })}
+                      data-testid="button-add-variant"
+                    >
+                      <Plus className="mr-2 h-3 w-3" />
+                      Adicionar variação
+                    </Button>
+                  </div>
+                  {variantFields.length === 0 ? (
+                    <p className="text-xs text-muted-foreground">Nenhuma variação cadastrada</p>
+                  ) : (
+                    <div className="space-y-3">
+                      {variantFields.map((field, index) => (
+                        <div key={field.id} className="grid gap-3 rounded-lg border p-3">
+                          <div className="grid grid-cols-2 gap-3">
+                            <FormField
+                              control={form.control}
+                              name={`variants.${index}.size`}
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Tamanho</FormLabel>
+                                  <FormControl>
+                                    <Input placeholder="P/M/G ou 38/40" {...field} data-testid={`input-variant-size-${index}`} />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            <FormField
+                              control={form.control}
+                              name={`variants.${index}.color`}
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Cor</FormLabel>
+                                  <FormControl>
+                                    <Input placeholder="Cor" {...field} data-testid={`input-variant-color-${index}`} />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          </div>
+                          <div className="grid grid-cols-3 gap-3">
+                            <FormField
+                              control={form.control}
+                              name={`variants.${index}.sku`}
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>SKU</FormLabel>
+                                  <FormControl>
+                                    <Input placeholder="SKU variação" {...field} data-testid={`input-variant-sku-${index}`} />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            <FormField
+                              control={form.control}
+                              name={`variants.${index}.barcode`}
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Código de barras</FormLabel>
+                                  <FormControl>
+                                    <Input placeholder="EAN/GTIN" {...field} data-testid={`input-variant-barcode-${index}`} />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            <FormField
+                              control={form.control}
+                              name={`variants.${index}.stock`}
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Estoque</FormLabel>
+                                  <FormControl>
+                                    <Input
+                                      type="number"
+                                      placeholder="0"
+                                      {...field}
+                                      value={field.value ?? ""}
+                                      onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : 0)}
+                                      data-testid={`input-variant-stock-${index}`}
+                                    />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          </div>
+                          <div className="flex justify-end">
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => removeVariant(index)}
+                              data-testid={`button-remove-variant-${index}`}
+                            >
+                              <Trash2 className="mr-2 h-3 w-3" />
+                              Remover variação
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
                 <DialogFooter>
                   <Button type="submit" disabled={createMutation.isPending || updateMutation.isPending} data-testid="button-submit-product">
-                    {editingProduct ? "Update Product" : "Add Product"}
+                    {editingProduct ? "Atualizar produto" : "Adicionar produto"}
                   </Button>
                 </DialogFooter>
               </form>
@@ -249,7 +473,7 @@ export default function Products() {
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
-            placeholder="Search products..."
+            placeholder="Buscar produtos..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-10"
@@ -258,10 +482,10 @@ export default function Products() {
         </div>
         <Select value={selectedCategory} onValueChange={setSelectedCategory}>
           <SelectTrigger className="w-full sm:w-48" data-testid="select-filter-category">
-            <SelectValue placeholder="All Categories" />
+            <SelectValue placeholder="Todas as categorias" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Categories</SelectItem>
+            <SelectItem value="all">Todas as categorias</SelectItem>
             {categories.map((category) => (
               <SelectItem key={category} value={category}>
                 {category}
@@ -298,15 +522,22 @@ export default function Products() {
                   <Badge variant="secondary" className="text-xs">{product.category}</Badge>
                 </div>
                 <CardDescription className="text-xl font-bold text-foreground">
-                  ${product.price.toFixed(2)}
+                  {formatCurrency(product.salePrice ?? product.price)}
                 </CardDescription>
+                {product.salePrice ? (
+                  <p className="text-xs text-muted-foreground line-through">{formatCurrency(product.price)}</p>
+                ) : null}
+                <p className="text-xs text-muted-foreground">SKU: {product.sku}</p>
               </CardHeader>
               <CardContent>
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Stock:</span>
-                  <Badge variant={product.stock < 10 ? "destructive" : "default"} data-testid={`badge-stock-${product.id}`}>
-                    {product.stock} units
+                  <span className="text-muted-foreground">Estoque:</span>
+                  <Badge variant={getTotalStock(product) < 10 ? "destructive" : "default"} data-testid={`badge-stock-${product.id}`}>
+                    {getTotalStock(product)} itens
                   </Badge>
+                </div>
+                <div className="mt-2 text-xs text-muted-foreground">
+                  Fornecedor: {product.supplier}
                 </div>
               </CardContent>
               <CardFooter className="flex gap-2">
@@ -318,7 +549,7 @@ export default function Products() {
                   data-testid={`button-edit-${product.id}`}
                 >
                   <Pencil className="mr-2 h-3 w-3" />
-                  Edit
+                  Editar
                 </Button>
                 <Button
                   variant="outline"
@@ -328,7 +559,7 @@ export default function Products() {
                   data-testid={`button-delete-${product.id}`}
                 >
                   <Trash2 className="mr-2 h-3 w-3" />
-                  Delete
+                  Excluir
                 </Button>
               </CardFooter>
             </Card>
@@ -338,11 +569,11 @@ export default function Products() {
         <Card>
           <CardContent className="py-16 text-center">
             <Package className="mx-auto h-16 w-16 text-muted-foreground" />
-            <h3 className="mt-4 text-lg font-semibold text-foreground">No products found</h3>
+            <h3 className="mt-4 text-lg font-semibold text-foreground">Nenhum produto encontrado</h3>
             <p className="mt-2 text-sm text-muted-foreground">
               {searchQuery || selectedCategory !== "all"
-                ? "Try adjusting your search or filters"
-                : "Get started by adding your first product"}
+                ? "Tente ajustar sua busca ou filtros"
+                : "Comece adicionando seu primeiro produto"}
             </p>
           </CardContent>
         </Card>
